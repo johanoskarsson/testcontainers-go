@@ -19,6 +19,7 @@ import (
 
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/go-units"
+	"github.com/go-redis/redis/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gotest.tools/v3/env"
@@ -35,7 +36,6 @@ import (
 	"github.com/docker/docker/api/types/filters"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
-	"github.com/go-redis/redis"
 
 	"github.com/testcontainers/testcontainers-go/wait"
 )
@@ -1010,7 +1010,7 @@ func Test_BuildContainerFromDockerfile(t *testing.T) {
 	})
 
 	t.Log("pinging redis")
-	pong, err := client.Ping().Result()
+	pong, err := client.Ping(context).Result()
 
 	t.Log("received response from redis")
 
