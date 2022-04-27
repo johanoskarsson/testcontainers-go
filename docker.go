@@ -342,28 +342,35 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 	return a, nil
 }
 
-func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
+func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error, io.Reader) {
 	cli := c.provider.client
 	response, err := cli.ContainerExecCreate(ctx, c.ID, types.ExecConfig{
-		Cmd:    cmd,
-		Detach: false,
+		Cmd:          cmd,
+		Detach:       false,
+		AttachStdout: true,
+		AttachStderr: true,
 	})
 	if err != nil {
-		return 0, err
+		return 0, err, nil
 	}
 
 	err = cli.ContainerExecStart(ctx, response.ID, types.ExecStartCheck{
 		Detach: false,
 	})
 	if err != nil {
-		return 0, err
+		return 0, err, nil
+	}
+
+	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
+	if err != nil {
+		return 0, err, nil
 	}
 
 	var exitCode int
 	for {
 		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
 		if err != nil {
-			return 0, err
+			return 0, err, nil
 		}
 
 		if !execResp.Running {
@@ -374,7 +381,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error) {
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return exitCode, nil
+	return exitCode, nil, hijack.Reader
 }
 
 type FileFromContainer struct {

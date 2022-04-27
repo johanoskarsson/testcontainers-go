@@ -52,18 +52,18 @@ func (st mockExecTarget) Logs(_ context.Context) (io.ReadCloser, error) {
 	return nil, errors.New("not implemented")
 }
 
-func (st mockExecTarget) Exec(ctx context.Context, _ []string) (int, error) {
+func (st mockExecTarget) Exec(ctx context.Context, _ []string) (int, error, io.Reader) {
 	time.Sleep(st.waitDuration)
 
 	if err := ctx.Err(); err != nil {
-		return st.exitCode, err
+		return st.exitCode, err, nil
 	}
 
 	if !st.successAfter.IsZero() && time.Now().After(st.successAfter) {
-		return 0, st.failure
+		return 0, st.failure, nil
 	}
 
-	return st.exitCode, st.failure
+	return st.exitCode, st.failure, nil
 }
 
 func (st mockExecTarget) State(_ context.Context) (*types.ContainerState, error) {
