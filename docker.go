@@ -342,7 +342,7 @@ func (c *DockerContainer) NetworkAliases(ctx context.Context) (map[string][]stri
 	return a, nil
 }
 
-func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error, io.Reader) {
+func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, io.Reader, error) {
 	cli := c.provider.client
 	response, err := cli.ContainerExecCreate(ctx, c.ID, types.ExecConfig{
 		Cmd:          cmd,
@@ -351,26 +351,26 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error, i
 		AttachStderr: true,
 	})
 	if err != nil {
-		return 0, err, nil
+		return 0, nil, err
+	}
+
+	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
+	if err != nil {
+		return 0, nil, err
 	}
 
 	err = cli.ContainerExecStart(ctx, response.ID, types.ExecStartCheck{
 		Detach: false,
 	})
 	if err != nil {
-		return 0, err, nil
-	}
-
-	hijack, err := cli.ContainerExecAttach(ctx, response.ID, types.ExecStartCheck{})
-	if err != nil {
-		return 0, err, nil
+		return 0, nil, err
 	}
 
 	var exitCode int
 	for {
 		execResp, err := cli.ContainerExecInspect(ctx, response.ID)
 		if err != nil {
-			return 0, err, nil
+			return 0, nil, err
 		}
 
 		if !execResp.Running {
@@ -381,7 +381,7 @@ func (c *DockerContainer) Exec(ctx context.Context, cmd []string) (int, error, i
 		time.Sleep(100 * time.Millisecond)
 	}
 
-	return exitCode, nil, hijack.Reader
+	return exitCode, hijack.Reader, nil
 }
 
 type FileFromContainer struct {

@@ -27,7 +27,7 @@ func (st exitStrategyTarget) Logs(ctx context.Context) (io.ReadCloser, error) {
 	return nil, nil
 }
 
-func (st exitStrategyTarget) Exec(ctx context.Context, cmd []string) (int, error, io.Reader) {
+func (st exitStrategyTarget) Exec(ctx context.Context, cmd []string) (int, io.Reader, error) {
 	return 0, nil, nil
 }
 
